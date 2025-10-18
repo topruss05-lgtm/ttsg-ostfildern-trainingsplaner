@@ -1,0 +1,97 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+
+// Session-Cookie auslesen
+const sessionCookie = Astro.cookies.get('session');
+const userId = sessionCookie?.value;
+
+let user = null;
+if (userId) {
+  const { db } = await import('../lib/db');
+  user = await db.users.getById(userId);
+}
+---
+
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} - TTSG Ostfildern Trainingsplaner</title>
+  </head>
+  <body>
+    <nav class="bg-gradient-to-r from-red-600 to-red-700 shadow-lg">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex items-center">
+            <a href="/" class="text-xl font-bold text-white flex items-center gap-2">
+              <span class="text-2xl">🏓</span>
+              <div class="flex flex-col leading-tight">
+                <span class="text-sm font-normal">TTSG Ostfildern</span>
+                <span class="text-base">Trainingsplaner</span>
+              </div>
+            </a>
+          </div>
+
+          <div class="flex items-center space-x-4">
+            {user ? (
+              <>
+                <span class="text-white font-medium">
+                  {user.name} ({user.role === 'trainer' ? 'Trainer' : 'Spieler'})
+                </span>
+                {user.role === 'trainer' ? (
+                  <a
+                    href="/trainer/dashboard"
+                    class="text-white hover:text-red-200 transition-colors"
+                  >
+                    Dashboard
+                  </a>
+                ) : (
+                  <a
+                    href="/trainings"
+                    class="text-white hover:text-red-200 transition-colors"
+                  >
+                    Trainings
+                  </a>
+                )}
+                <form method="POST" action="/api/logout">
+                  <button
+                    type="submit"
+                    class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-black transition-colors"
+                  >
+                    Abmelden
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  class="text-white hover:text-red-200 transition-colors"
+                >
+                  Anmelden
+                </a>
+                <a
+                  href="/register"
+                  class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-black transition-colors"
+                >
+                  Registrieren
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <slot />
+    </main>
+  </body>
+</html>

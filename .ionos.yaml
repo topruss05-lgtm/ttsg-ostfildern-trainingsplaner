@@ -1,0 +1,7 @@
+# Alternative IONOS Deploy Now Konfiguration
+# Falls .deploy-now.yaml nicht funktioniert
+
+distFolder: dist
+setupCommands:
+  - npm ci
+buildCommand: npm run build

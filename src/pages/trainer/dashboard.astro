@@ -1,0 +1,236 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// Auth-Check
+const sessionCookie = Astro.cookies.get('session');
+if (!sessionCookie) {
+  return Astro.redirect('/login');
+}
+
+const { db } = await import('../../lib/db');
+const user = await db.users.getById(sessionCookie.value);
+
+if (!user || user.role !== 'trainer') {
+  return Astro.redirect('/');
+}
+
+// Trainings und Anmeldungen laden
+const trainings = await db.trainings.getUpcoming();
+const attendancesMap: Record<string, any[]> = {};
+
+for (const training of trainings) {
+  const attendances = await db.attendances.getByTraining(training.id);
+  attendancesMap[training.id] = attendances;
+}
+
+let message = '';
+let messageType: 'success' | 'error' = 'success';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+
+    if (action === 'create') {
+      const date = formData.get('date')?.toString();
+      const time = formData.get('time')?.toString();
+      const maxParticipants = parseInt(formData.get('maxParticipants')?.toString() || '0');
+
+      if (date && time && maxParticipants > 0) {
+        await db.trainings.create({
+          date,
+          time,
+          maxParticipants,
+          trainerId: user.id,
+          trainerName: user.name
+        });
+        return Astro.redirect('/trainer/dashboard?success=created');
+      } else {
+        message = 'Bitte fülle alle Felder aus';
+        messageType = 'error';
+      }
+    } else if (action === 'delete') {
+      const trainingId = formData.get('trainingId')?.toString();
+      if (trainingId) {
+        await db.trainings.delete(trainingId);
+        return Astro.redirect('/trainer/dashboard?success=deleted');
+      }
+    }
+  } catch (e) {
+    message = 'Ein Fehler ist aufgetreten';
+    messageType = 'error';
+  }
+}
+
+// URL-Parameter für Success-Messages
+const url = new URL(Astro.request.url);
+const successParam = url.searchParams.get('success');
+if (successParam === 'created') {
+  message = 'Training erfolgreich erstellt!';
+  messageType = 'success';
+} else if (successParam === 'deleted') {
+  message = 'Training erfolgreich gelöscht';
+  messageType = 'success';
+}
+---
+
+<Layout title="Trainer-Dashboard">
+  <div>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Trainer-Dashboard</h1>
+      <p class="text-gray-600 mt-2">Willkommen, {user.name}!</p>
+    </div>
+
+    {message && (
+      <div class={`mb-4 p-4 rounded-md ${messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+        <p class={messageType === 'success' ? 'text-green-800' : 'text-red-800'}>{message}</p>
+      </div>
+    )}
+
+    <div class="mb-6">
+      <button
+        id="toggleFormBtn"
+        class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+      >
+        + Neues Training erstellen
+      </button>
+    </div>
+
+    <div id="createForm" class="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-8 hidden">
+      <h2 class="text-xl font-semibold mb-4">Neues Training erstellen</h2>
+      <form method="POST" class="space-y-4">
+        <input type="hidden" name="action" value="create" />
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label for="date" class="block text-sm font-medium text-gray-700 mb-1">
+              Datum
+            </label>
+            <input
+              type="date"
+              id="date"
+              name="date"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label for="time" class="block text-sm font-medium text-gray-700 mb-1">
+              Uhrzeit
+            </label>
+            <input
+              type="time"
+              id="time"
+              name="time"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label for="maxParticipants" class="block text-sm font-medium text-gray-700 mb-1">
+            Maximale Teilnehmerzahl
+          </label>
+          <input
+            type="number"
+            id="maxParticipants"
+            name="maxParticipants"
+            min="1"
+            value="20"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700"
+        >
+          Training erstellen
+        </button>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md border border-gray-200">
+      <div class="p-6 border-b border-gray-200">
+        <h2 class="text-xl font-semibold">Anstehende Trainings</h2>
+      </div>
+
+      {trainings.length === 0 ? (
+        <div class="p-6 text-center text-gray-500">
+          Noch keine Trainings geplant. Erstelle dein erstes Training!
+        </div>
+      ) : (
+        <div class="divide-y divide-gray-200">
+          {trainings.map((training) => {
+            const attendances = attendancesMap[training.id] || [];
+
+            return (
+              <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 class="text-lg font-semibold text-gray-900">
+                      {new Date(training.date).toLocaleDateString('de-DE', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </h3>
+                    <p class="text-gray-600">Uhrzeit: {training.time} Uhr</p>
+                    <p class="text-sm text-gray-500 mt-1">
+                      Max. Teilnehmer: {training.maxParticipants}
+                    </p>
+                  </div>
+                  <form method="POST">
+                    <input type="hidden" name="action" value="delete" />
+                    <input type="hidden" name="trainingId" value={training.id} />
+                    <button
+                      type="submit"
+                      class="px-3 py-1 text-sm text-red-600 hover:text-red-700 border border-red-600 rounded-md hover:bg-red-50"
+                    >
+                      Löschen
+                    </button>
+                  </form>
+                </div>
+
+                <div class="mt-4">
+                  <h4 class="font-medium text-gray-900 mb-2">
+                    Angemeldete Spieler ({attendances.length})
+                  </h4>
+                  {attendances.length > 0 ? (
+                    <ul class="space-y-1">
+                      {attendances.map((attendance) => (
+                        <li class="flex items-center text-sm text-gray-700">
+                          <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                          {attendance.userName}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p class="text-sm text-gray-500">Noch keine Anmeldungen</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  </div>
+
+  <script>
+    const toggleBtn = document.getElementById('toggleFormBtn');
+    const form = document.getElementById('createForm');
+
+    toggleBtn?.addEventListener('click', () => {
+      form?.classList.toggle('hidden');
+      if (toggleBtn.textContent?.includes('Abbrechen')) {
+        toggleBtn.textContent = '+ Neues Training erstellen';
+      } else {
+        toggleBtn.textContent = 'Abbrechen';
+      }
+    });
+  </script>
+</Layout>

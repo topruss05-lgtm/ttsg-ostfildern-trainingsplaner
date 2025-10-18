@@ -1,0 +1,34 @@
+# IONOS Deploy Now Konfiguration
+# Für Node.js Apps mit SSR (Astro)
+
+version: 1.0
+
+deploy:
+  # Build-Einstellungen
+  build:
+    # Node.js Version
+    runtime: nodejs-20
+
+    # Install-Befehl
+    prepare:
+      - npm ci
+
+    # Build-Befehl
+    build:
+      - npm run build
+
+    # Ausgabeverzeichnis
+    dist: dist
+
+  # Server-Einstellungen für Node.js SSR
+  runtime:
+    # Start-Befehl für den Server
+    start: node ./dist/server/entry.mjs
+
+    # Port (IONOS Deploy Now setzt automatisch den PORT)
+    port: $PORT
+
+    # Environment-Variablen (setze diese in IONOS Deploy Now Dashboard)
+    env:
+      - PUBLIC_SUPABASE_URL
+      - PUBLIC_SUPABASE_ANON_KEY
