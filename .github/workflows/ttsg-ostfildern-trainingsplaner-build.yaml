@@ -1,0 +1,56 @@
+# To better understand this file read this:
+# https://docs.ionos.space/docs/github-actions-customization/
+
+name: "Deploy Now: Execute Build"
+
+on:
+  workflow_call:
+    inputs:
+      site-url:
+        required: true
+        type: string
+      branch-id:
+        required: true
+        type: string
+
+env:
+  DEPLOYMENT_FOLDER: dist
+
+jobs:
+# Please do not rename this job
+  build-project:
+    name: build ttsg-ostfildern-trainingsplaner
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: v22.x
+
+      - name: Build Node assets
+        env:
+          CI: true
+          PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6Z3NydnRhc3d3cWp4bnJ1aXJuIiwicm9sZSI6ImFub   24iLCJpYXQiOjE3NjA2MzQ0MDAsImV4cCI6MjA3NjIxMDQwMH0.ihEkTSD2F0dHoVOSZTxqrxMsv-risZUNGQ4ibcNnLd8
+          PUBLIC_SUPABASE_URL: https://jzgsrvtaswwqjxnruirn.supabase.co
+          SITE_URL: ${{ inputs.site-url }}
+        run: |
+          npm ci
+          npm run build
+
+# Please do not touch the following action
+      - name: Store deployment content
+        uses: ionos-deploy-now/artifact-action@v1
+        with:
+          api-key: ${{ secrets.IONOS_API_KEY }}
+          service-host: api-eu.ionos.space
+          project-id: 0307e5e6-18f3-4b0d-908f-48276dc39123
+          branch-id: ${{ inputs.branch-id }}
+          version: ${{ github.sha }}
+          folder: ${{ env.DEPLOYMENT_FOLDER }}
+          config-file: .deploy-now/ttsg-ostfildern-trainingsplaner/config.yaml
+          action: upload
