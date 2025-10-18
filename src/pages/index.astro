@@ -1,14 +1,5 @@
 ---
 import Layout from '../layouts/Layout.astro';
-
-const sessionCookie = Astro.cookies.get('session');
-const userId = sessionCookie?.value;
-
-let user = null;
-if (userId) {
-  const { db } = await import('../lib/db');
-  user = await db.users.getById(userId);
-}
 ---
 
 <Layout title="Willkommen">
@@ -20,40 +11,7 @@ if (userId) {
       Organisiere dein Training beim TTSG Ostfildern einfach und effizient
     </p>
 
-    {user ? (
-      <div class="space-y-4">
-        {user.role === 'trainer' ? (
-          <a
-            href="/trainer/dashboard"
-            class="inline-block px-6 py-3 text-lg font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-lg"
-          >
-            Zum Trainer-Dashboard
-          </a>
-        ) : (
-          <a
-            href="/trainings"
-            class="inline-block px-6 py-3 text-lg font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-lg"
-          >
-            Zu den Trainings
-          </a>
-        )}
-      </div>
-    ) : (
-      <div class="space-x-4">
-        <a
-          href="/register"
-          class="inline-block px-6 py-3 text-lg font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-lg"
-        >
-          Jetzt registrieren
-        </a>
-        <a
-          href="/login"
-          class="inline-block px-6 py-3 text-lg font-medium text-white bg-gray-900 rounded-lg hover:bg-black transition-colors shadow-lg"
-        >
-          Anmelden
-        </a>
-      </div>
-    )}
+    <div id="auth-buttons"></div>
   </div>
 
   <div class="mt-16 grid md:grid-cols-3 gap-8">
@@ -82,3 +40,50 @@ if (userId) {
     </div>
   </div>
 </Layout>
+
+<script>
+  import { getUser, getUserRole } from '../lib/auth';
+
+  async function init() {
+    const container = document.getElementById('auth-buttons')!;
+    const user = await getUser();
+
+    if (user) {
+      // User is logged in
+      const userData = await getUserRole(user.id);
+      const dashboardUrl = userData.role === 'trainer' ? '/trainer/dashboard' : '/trainings';
+      const buttonText = userData.role === 'trainer' ? 'Zum Trainer-Dashboard' : 'Zu den Trainings';
+
+      container.innerHTML = `
+        <div class="space-y-4">
+          <a
+            href="${dashboardUrl}"
+            class="inline-block px-6 py-3 text-lg font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-lg"
+          >
+            ${buttonText}
+          </a>
+        </div>
+      `;
+    } else {
+      // User is not logged in
+      container.innerHTML = `
+        <div class="space-x-4">
+          <a
+            href="/register"
+            class="inline-block px-6 py-3 text-lg font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors shadow-lg"
+          >
+            Jetzt registrieren
+          </a>
+          <a
+            href="/login"
+            class="inline-block px-6 py-3 text-lg font-medium text-white bg-gray-900 rounded-lg hover:bg-black transition-colors shadow-lg"
+          >
+            Anmelden
+          </a>
+        </div>
+      `;
+    }
+  }
+
+  init();
+</script>

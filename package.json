@@ -10,10 +10,8 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/node": "^8.3.4",
     "@supabase/supabase-js": "^2.39.7",
-    "astro": "^4.16.18",
-    "bcryptjs": "^2.4.3"
+    "astro": "^4.16.18"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

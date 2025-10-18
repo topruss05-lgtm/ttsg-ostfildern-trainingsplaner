@@ -13,11 +13,11 @@ Eine moderne Webanwendung zur Verwaltung von Tischtennistrainings, gebaut mit As
 
 ## Technologie-Stack
 
-- **Framework**: Astro 4 (SSR)
+- **Framework**: Astro 4 (Static Site Generation)
 - **Datenbank**: Supabase (PostgreSQL)
 - **Styling**: TailwindCSS 3
-- **Authentifizierung**: Session-basiert mit bcryptjs
-- **Deployment**: IONOS Deploy Now
+- **Authentifizierung**: Supabase Auth (client-seitig)
+- **Deployment**: IONOS Deploy Now (statisches Hosting)
 - **Sprache**: TypeScript
 
 ---
@@ -138,24 +138,28 @@ git push -u origin main
 
 #### 5.4 Build-Einstellungen konfigurieren
 
-IONOS sollte automatisch folgende Einstellungen erkennen:
+Trage folgende Einstellungen ein:
 
-- **Framework**: Astro
-- **Build Command**: `npm run build`
-- **Output Directory**: `dist`
-- **Install Command**: `npm ci`
-
-Falls nicht, trage sie manuell ein.
+| Einstellung | Wert |
+|-------------|------|
+| **Node Version** | 22.x |
+| **Install Command** | `npm ci` |
+| **Build Command** | `npm run build` |
+| **Output Directory** | `dist` |
 
 #### 5.5 Umgebungsvariablen in IONOS setzen
 
 1. In deinem IONOS-Projekt, gehe zu **"Einstellungen"** → **"Umgebungsvariablen"**
 2. Füge folgende Variablen hinzu:
 
-```
-PUBLIC_SUPABASE_URL = https://deinprojekt.supabase.co
-PUBLIC_SUPABASE_ANON_KEY = dein-anon-key-hier
-```
+| Name | Value |
+|------|-------|
+| `CI` | `true` |
+| `SITE_URL` | `$IONOS_APP_URL` |
+| `PUBLIC_SUPABASE_URL` | `https://deinprojekt.supabase.co` |
+| `PUBLIC_SUPABASE_ANON_KEY` | `dein-anon-key-hier` |
+
+**Wichtig:** Ersetze die Supabase-Werte durch deine eigenen aus Schritt 3.3!
 
 3. Speichere die Einstellungen
 
@@ -242,43 +246,46 @@ table_tennis_planner/
 - Das Datenbank-Schema wurde nicht korrekt ausgeführt
 - Gehe zurück zu Schritt 3.2 und führe das SQL-Script erneut aus
 
-### Problem: Session funktioniert nicht / User wird nicht eingeloggt
+### Problem: Login funktioniert nicht / User wird nicht eingeloggt
 
 **Lösung**:
-- Lösche Browser-Cookies
-- Überprüfe, dass die Supabase-Verbindung funktioniert
+- Lösche Browser-Cache und Cookies
+- Überprüfe, dass die Supabase-Verbindung funktioniert (Browser-Console)
 - Prüfe in Supabase unter "Authentication" → "Users", ob User erstellt werden
+- Stelle sicher, dass Supabase Auth aktiviert ist in deinem Projekt
 
 ---
 
 ## Verbesserungen durch Claude Code
 
-### Behobene Probleme:
+### Migration zu Static Site Generation (SSG):
 
-1. **Datenbank-Mapping korrigiert** (src/lib/db.ts)
-   - Problem: Supabase gibt Daten in snake_case zurück, TypeScript erwartet camelCase
-   - Lösung: Konvertierung zwischen Datenbank-Schema (snake_case) und TypeScript-Typen (camelCase) in allen CRUD-Operationen
-   - Betroffene Funktionen: `users.getAll()`, `users.getById()`, `users.getByEmail()`, `users.create()`, sowie alle Training- und Attendance-Funktionen
+1. **Astro auf statisches Rendering umgestellt**
+   - Von Server-Side Rendering (SSR) zu Static Site Generation (SSG)
+   - Kompatibel mit IONOS Deploy Now (kostenloses statisches Hosting)
+   - Bessere Performance durch CDN-Caching
 
-2. **Import-Fehler behoben** (src/pages/login.astro:13)
-   - Problem: Falscher bcrypt-Import führte zu Runtime-Fehlern
-   - Lösung: Korrekter Default-Import: `(await import('bcryptjs')).default`
+2. **Supabase Auth Integration**
+   - Ersetzt: Server-seitige bcrypt-Authentifizierung
+   - Neu: Supabase Auth (client-seitig)
+   - Vorteile: E-Mail-Verifizierung, Password-Reset, bessere Sicherheit
 
-3. **Typ-Sicherheit verbessert**
-   - Alle Datenbank-Operationen haben nun korrekte TypeScript-Typen
-   - Null-Checks vor der Datenverarbeitung hinzugefügt
-   - Konsistente Datenstrukturen im gesamten Projekt
+3. **Client-seitige Datenbank-Operationen**
+   - Alle Seiten nutzen jetzt Supabase JavaScript SDK
+   - Row-Level Security (RLS) schützt Daten auf DB-Ebene
+   - Keine Server-seitigen API-Endpoints mehr nötig
 
-4. **.env.example erstellt**
-   - Template für Umgebungsvariablen hinzugefügt
-   - Bessere Dokumentation für neue Entwickler
+4. **Datenbank-Migration durchgeführt**
+   - `password_hash` Spalte entfernt
+   - Foreign Key zu `auth.users` hinzugefügt
+   - RLS Policies für Auth-basierte Zugriffskontrolle
 
 ### Best Practices implementiert:
 
-- Konsistente Fehlerbehandlung in allen API-Endpunkten
-- Kommentare für bessere Code-Lesbarkeit
-- Separation of Concerns: Datenbank-Logik getrennt von UI-Komponenten
-- Server-Side Rendering für bessere Performance und SEO
+- Client-seitige Authentifizierung mit Supabase Auth
+- Row-Level Security (RLS) für Datenschutz
+- TypeScript für Typ-Sicherheit
+- Statisches Hosting für Kostenersparnis und DSGVO-Konformität
 
 ---
 
@@ -296,10 +303,11 @@ table_tennis_planner/
 
 ## Sicherheitshinweise
 
-- Die Passwörter werden mit bcryptjs gehasht (nicht im Klartext gespeichert)
-- Supabase Row Level Security (RLS) ist aktiviert
-- Sessions sind httpOnly und secure (in Produktion)
-- API-Keys sollten niemals im Git-Repository committet werden
+- Authentifizierung läuft über Supabase Auth (sicher und DSGVO-konform)
+- Passwörter werden von Supabase sicher gehasht (bcrypt)
+- Row Level Security (RLS) schützt alle Datenbank-Tabellen
+- API-Keys (Anon Key) sind öffentlich sicher - RLS schützt die Daten
+- Supabase-Projekt läuft in EU-Region (Frankfurt) für DSGVO-Konformität
 
 ---
 
