@@ -15,8 +15,7 @@ export const db = {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
-        passwordHash: user.password_hash
+        role: user.role
       }));
     },
 
@@ -35,8 +34,7 @@ export const db = {
         id: data.id,
         email: data.email,
         name: data.name,
-        role: data.role,
-        passwordHash: data.password_hash
+        role: data.role
       };
     },
 
@@ -55,8 +53,7 @@ export const db = {
         id: data.id,
         email: data.email,
         name: data.name,
-        role: data.role,
-        passwordHash: data.password_hash
+        role: data.role
       };
     },
 
@@ -66,8 +63,7 @@ export const db = {
         .insert([{
           email: user.email,
           name: user.name,
-          role: user.role,
-          password_hash: user.passwordHash
+          role: user.role
         }])
         .select()
         .single();
@@ -79,8 +75,7 @@ export const db = {
         id: data.id,
         email: data.email,
         name: data.name,
-        role: data.role,
-        passwordHash: data.password_hash
+        role: data.role
       };
     }
   },

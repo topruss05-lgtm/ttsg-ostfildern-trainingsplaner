@@ -35,8 +35,8 @@ jobs:
       - name: Build Node assets
         env:
           CI: true
-          PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6Z3NydnRhc3d3cWp4bnJ1aXJuIiwicm9sZSI6ImFub   24iLCJpYXQiOjE3NjA2MzQ0MDAsImV4cCI6MjA3NjIxMDQwMH0.ihEkTSD2F0dHoVOSZTxqrxMsv-risZUNGQ4ibcNnLd8
-          PUBLIC_SUPABASE_URL: https://jzgsrvtaswwqjxnruirn.supabase.co
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           SITE_URL: ${{ inputs.site-url }}
         run: |
           npm ci

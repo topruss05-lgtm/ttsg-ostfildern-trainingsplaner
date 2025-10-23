@@ -1,5 +1,7 @@
 # IONOS Deploy Now Konfiguration
-# Für Node.js Apps mit SSR (Astro)
+# Für Static Site Generation (Astro)
+# Hinweis: Diese Datei wird möglicherweise nicht verwendet,
+# da der GitHub Workflow (.github/workflows/) die Deployment-Logik enthält
 
 version: 1.0
 
@@ -7,7 +9,7 @@ deploy:
   # Build-Einstellungen
   build:
     # Node.js Version
-    runtime: nodejs-20
+    runtime: nodejs-22
 
     # Install-Befehl
     prepare:
@@ -17,18 +19,8 @@ deploy:
     build:
       - npm run build
 
-    # Ausgabeverzeichnis
+    # Ausgabeverzeichnis (statische Dateien)
     dist: dist
 
-  # Server-Einstellungen für Node.js SSR
-  runtime:
-    # Start-Befehl für den Server
-    start: node ./dist/server/entry.mjs
-
-    # Port (IONOS Deploy Now setzt automatisch den PORT)
-    port: $PORT
-
-    # Environment-Variablen (setze diese in IONOS Deploy Now Dashboard)
-    env:
-      - PUBLIC_SUPABASE_URL
-      - PUBLIC_SUPABASE_ANON_KEY
+  # Keine Runtime-Config nötig für Static Site
+  # Die App läuft komplett client-seitig im Browser
