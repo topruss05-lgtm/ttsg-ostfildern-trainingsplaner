@@ -1,0 +1,110 @@
+[
+  {
+    "name": "users",
+    "type": "auth",
+    "schema": [
+      {
+        "name": "name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "role",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["player", "trainer"]
+        }
+      }
+    ],
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
+    "createRule": "",
+    "updateRule": "@request.auth.id = id",
+    "deleteRule": null
+  },
+  {
+    "name": "trainings",
+    "type": "base",
+    "schema": [
+      {
+        "name": "date",
+        "type": "date",
+        "required": true
+      },
+      {
+        "name": "time",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "max_participants",
+        "type": "number",
+        "required": true
+      },
+      {
+        "name": "trainer_id",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "users",
+          "cascadeDelete": false
+        }
+      },
+      {
+        "name": "trainer_name",
+        "type": "text",
+        "required": true
+      }
+    ],
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
+    "createRule": "@request.auth.role = 'trainer'",
+    "updateRule": "@request.auth.id = trainer_id",
+    "deleteRule": "@request.auth.id = trainer_id"
+  },
+  {
+    "name": "attendances",
+    "type": "base",
+    "schema": [
+      {
+        "name": "training_id",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "trainings",
+          "cascadeDelete": true
+        }
+      },
+      {
+        "name": "user_id",
+        "type": "relation",
+        "required": true,
+        "options": {
+          "collectionId": "users",
+          "cascadeDelete": true
+        }
+      },
+      {
+        "name": "user_name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "name": "status",
+        "type": "select",
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["attending", "cancelled"]
+        }
+      }
+    ],
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
+    "createRule": "@request.auth.id != ''",
+    "updateRule": "@request.auth.id = user_id",
+    "deleteRule": "@request.auth.id = user_id"
+  }
+]
